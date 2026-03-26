@@ -4,10 +4,15 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-# CITIES
-city_X = [0, 3, 6, 7, 15, 10, 16, 5, 8, 1.5]
-city_Y = [1, 2, 1, 4.5, -1, 2.5, 11, 6, 9, 12]
-number_of_cities = 10 # N
+# CITIES 3
+# city_X = [0, 3, 6, 7, 15, 10, 16, 5, 8, 1.5]
+# city_Y = [1, 2, 1, 4.5, -1, 2.5, 11, 6, 9, 12]
+# number_of_cities = len(city_X) # N
+
+# CITIES 4
+city_X = [3, 2, 12, 7, 9, 3, 16, 11, 9, 2]
+city_Y = [1, 4, 2, 4.5, 9, 1.5, 11, 8, 10, 7]
+number_of_cities = len(city_X)
 
 population_size = 250 # P
 selection_proportion = 0.8 # n
