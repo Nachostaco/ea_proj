@@ -4,6 +4,9 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
+# More readable printing of large NumPy arrays
+np.set_printoptions(linewidth = 600)
+
 # CITIES 3
 # city_X = [0, 3, 6, 7, 15, 10, 16, 5, 8, 1.5]
 # city_Y = [1, 2, 1, 4.5, -1, 2.5, 11, 6, 9, 12]
@@ -12,7 +15,7 @@ from matplotlib import pyplot as plt
 # CITIES 4
 city_X = [3, 2, 12, 7, 9, 3, 16, 11, 9, 2]
 city_Y = [1, 4, 2, 4.5, 9, 1.5, 11, 8, 10, 7]
-number_of_cities = len(city_X)
+number_of_cities = len(city_X) # N
 
 population_size = 250 # P
 selection_proportion = 0.8 # n
@@ -22,25 +25,43 @@ maximum_generations = 1000 # T_max
 empty_allele_value = -1 # Representation of empty allele
 text_offset = 0.1 # So the text does not overlap points representing cities
 
-dist_matrix = []
+distance_matrix = []
+
+individuals_fitness = []
+total_fitness = []
+
+
+def precompute_distance_matrix():
+    global distance_matrix
+
+    distance_matrix = np.zeros((number_of_cities, number_of_cities))
+    for i in range(number_of_cities):
+        for j in range(number_of_cities):
+            distance_matrix[i, j] = np.sqrt((city_X[i] - city_X[j]) ** 2 + (city_Y[i] - city_Y[j]) ** 2)
 
 def generate_population(size: int):
     return np.array([np.random.permutation(number_of_cities) for _ in range(size)])
 
 def get_total_distance(city_indices):
+    # Precompute distance matrix
     travel_distance = 0
     for k in range(number_of_cities - 1):
-        x_diff = (city_X[city_indices[k]] - city_X[city_indices[k + 1]])
-        y_diff = (city_Y[city_indices[k]] - city_Y[city_indices[k + 1]])
-        travel_distance += np.sqrt(x_diff**2 + y_diff**2)
+        travel_distance += distance_matrix[city_indices[k]][city_indices[k + 1]]
 
     # Add the distance between the last city and the first city
-    travel_distance += np.sqrt(
-        (city_X[city_indices[0]] - city_X[city_indices[number_of_cities - 1]]) ** 2 +
-        (city_Y[city_indices[0]] - city_Y[city_indices[number_of_cities - 1]]) ** 2
-    )
+    travel_distance += distance_matrix[city_indices[0]][city_indices[number_of_cities - 1]]
 
     return travel_distance
+
+def precompute_fitness_values(population):
+    global individuals_fitness, total_fitness
+
+    cost_values = [get_total_distance(individual) for individual in population]  # f_i
+    max_cost = max(cost_values)  # m_f
+
+    individuals_fitness = [max_cost - cost for cost in cost_values]  # t_i
+    total_fitness = sum(individuals_fitness)  # t_s
+
 
 def roulette_selection(population):
     """
@@ -48,21 +69,18 @@ def roulette_selection(population):
     :param population:
     :return: A randomly selected individual from the given population.
     """
-    cost_values = [get_total_distance(individual) for individual in population] # f_i
-    max_cost = max(cost_values) # m_f
-
-    fitness = [max_cost - cost for cost in cost_values] # t_i
-    total_fitness = sum(fitness) # t_s
+    global individuals_fitness, total_fitness
 
     random_number = np.random.uniform(0, total_fitness) # r - randomized from [0; t_s), not [0; t_s], but who cares
 
     cumulative_sum = 0
-    for individual, fitness_value in zip(population, fitness):
+    for individual, fitness_value in zip(population, individuals_fitness):
         cumulative_sum += fitness_value
         if cumulative_sum >= random_number:
             return individual
 
     return np.random.choice(population)
+
 
 def _crossover_fill_remaining(o, p):
     for i in range(len(o)):
@@ -83,6 +101,7 @@ def _create_offspring(p1, p2):
         prev_index = new_index
 
     return o
+
 
 def crossover(p1, p2):
     """
@@ -125,10 +144,12 @@ def plot_solution(solution):
     plt.ylabel("Y")
     plt.show()
 
+
 def main():
-    # So far, the best solution found is:
-    # [4, 5, 3, 2, 1, 0, 7, 9, 8, 6]
-    # with total distance (cost) equal to 61.13744551656403
+    global individuals_fitness, total_fitness
+
+    # Precompute distance matrix to avoid repeatedly calculating distances
+    precompute_distance_matrix()
 
     start_time = time.time()
 
@@ -137,6 +158,8 @@ def main():
 
     for generation in range(maximum_generations):
         new_population = []
+
+        precompute_fitness_values(population)
 
         # Select n*P individuals for crossover
         crossover_population = [roulette_selection(population) for _ in
@@ -172,6 +195,7 @@ def main():
     print(f"Time taken: {end_time - start_time} seconds")
 
     plot_solution(population[0])
+
 
 if __name__ == "__main__":
     main()
