@@ -64,14 +64,24 @@ def compute_arc_probabilities(ant: Ant) -> np.ndarray:
     return arc_probs
 
 def compute_pheromone_deposition_matrix(ants: list[Ant]) -> np.ndarray:
-    return NotImplemented
+    deposition_matrix = np.zeros(shape=(NUMBER_OF_CITIES, NUMBER_OF_CITIES), dtype=float)
+    for k in range(NUMBER_OF_ANTS):
+        ant = ants[k]
+        for a in range(NUMBER_OF_CITIES):
+            i = ant.visited_cities_indices[a]
+            j = ant.visited_cities_indices[a + 1 if a + 1 < NUMBER_OF_CITIES else 0]
+            inv_tour_length = 1 / compute_tour_length(ant)
+            deposition_matrix[i][j] += inv_tour_length
+            deposition_matrix[j][i] += inv_tour_length
+
+    return deposition_matrix
 
 def compute_tour_length(ant: Ant) -> float:
     global inv_distance_matrix
 
     tour_length = 0
-    for k in range(NUMBER_OF_CITIES - 1):
-        tour_length += inv_distance_matrix[ant.visited_cities_indices[k]][ant.visited_cities_indices[k + 1]] ** -1
+    for i in range(NUMBER_OF_CITIES - 1):
+        tour_length += inv_distance_matrix[ant.visited_cities_indices[i]][ant.visited_cities_indices[i + 1]] ** -1
     # Add the distance between the last city and the first city
     tour_length += (
             inv_distance_matrix[ant.visited_cities_indices[0]][ant.visited_cities_indices[NUMBER_OF_CITIES - 1]] ** -1)
@@ -94,9 +104,9 @@ def plot_solution(solution):
     for i in range(len(solution)):
         plt.text(CITY_X[i] + TEXT_OFFSET, CITY_Y[i] + TEXT_OFFSET, str(i), color="black", fontsize=12)
 
-    plt.title("Shortest found route for visiting all voivodeship cities")
-    plt.xlabel("Longitude")
-    plt.ylabel("Latitude")
+    plt.title("Shortest route found for visiting all given cities")
+    plt.xlabel("X")
+    plt.ylabel("Y")
     plt.show()
 
 def main():
@@ -119,7 +129,7 @@ def main():
                                fill_value=np.min(inv_distance_matrix[inv_distance_matrix > 0]))
 
     for t in range(T_MAX):
-        # Compute the quasi-decision matrix (used to compute elements of the decision matrix)
+        # Compute a quasi-decision matrix (used to compute elements of the decision matrix)
         compute_quasi_decision_matrix()
 
         for k in range(NUMBER_OF_ANTS):
@@ -128,7 +138,6 @@ def main():
             # Trace ant's tour
             for i in range(NUMBER_OF_CITIES - 1):
                 arc_probabilities = compute_arc_probabilities(ant)
-                print(arc_probabilities[0])
                 chosen_city_index = np.random.choice(NUMBER_OF_CITIES, p=arc_probabilities[0])
                 ant.move(chosen_city_index)
 
@@ -141,11 +150,17 @@ def main():
         pheromone_matrix *= (1 - PHEROMONE_EVAPORATION_RATE)
         pheromone_matrix += compute_pheromone_deposition_matrix(ants)
 
+        # Reset ants' memory
+        for k in range(NUMBER_OF_ANTS):
+            ants[k].reset()
+
     end = time.time()
 
-    print(f"Best tour: {best_tour}")
-    print(f"Best tour length: {best_tour_length}")
+    print(f"Optimal tour found: {best_tour}")
+    print(f"Length of the optimal tour found: {best_tour_length}")
     print(f"Time taken: {end - start} s")
+
+    plot_solution(best_tour)
 
 if __name__ == '__main__':
     main()
