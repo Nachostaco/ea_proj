@@ -41,14 +41,14 @@ trials = 10
 empty_allele_value = -1  # Representation of empty allele
 text_offset = 0.05  # So the text does not overlap points representing cities
 
-distance_matrix = np.zeros(shape=(number_of_cities, number_of_cities), dtype=float)
+inv_distance_matrix = np.zeros(shape=(number_of_cities, number_of_cities), dtype=float)
 
 individuals_fitness = []
 total_fitness = []
 
 
 def precompute_distance_matrix():
-    global distance_matrix
+    global inv_distance_matrix
 
     distance_matrix = np.zeros((number_of_cities, number_of_cities))
     for i in range(number_of_cities):
@@ -59,8 +59,8 @@ def precompute_distance_matrix():
 
 # Used for voivodeship cities
 def load_cities_data_from_file():
-    global distance_matrix, city_X, city_Y
-    data = pd.read_csv("../resources/voivodeship_cities.csv")
+    global inv_distance_matrix, city_X, city_Y
+    data = pd.read_csv("../../resources/voivodeship_cities.csv")
     city_X = data["X"].to_list()
     city_Y = data["Y"].to_list()
     data = data.drop(columns=data.columns[0:5])
@@ -74,10 +74,10 @@ def get_total_distance(city_indices):
     # Precompute distance matrix
     travel_distance = 0
     for k in range(number_of_cities - 1):
-        travel_distance += distance_matrix[city_indices[k]][city_indices[k + 1]]
+        travel_distance += inv_distance_matrix[city_indices[k]][city_indices[k + 1]]
 
     # Add the distance between the last city and the first city
-    travel_distance += distance_matrix[city_indices[0]][city_indices[number_of_cities - 1]]
+    travel_distance += inv_distance_matrix[city_indices[0]][city_indices[number_of_cities - 1]]
 
     return travel_distance
 
@@ -173,8 +173,8 @@ def plot_solution(solution):
         plt.text(city_X[i] + text_offset, city_Y[i] + text_offset, city_names[i], color="black", fontsize=12)
 
     plt.title("Shortest found route for visiting all voivodeship cities")
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
     plt.show()
 
 
@@ -246,6 +246,8 @@ def main():
 
     # Load in the distance matrix for voivodeship cities
     load_cities_data_from_file()
+
+    print(get_total_distance(np.array([5, 8, 2, 12, 4, 6, 9, 13, 10, 1, 14, 15, 3, 0, 7, 11])))
 
     start_time = time.time()
 
