@@ -1,15 +1,20 @@
 import time
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 
 from ant import Ant
 
 np.set_printoptions(linewidth=600, precision=3)
 
-# CITIES 4
-CITY_X = [3, 2, 12, 7, 9, 3, 16, 11, 9, 2]
-CITY_Y = [1, 4, 2, 4.5, 9, 1.5, 11, 8, 10, 7]
-NUMBER_OF_CITIES = len(CITY_X) # N
+# VOIVODESHIP CITIES (coordinates are loaded in runtime)
+CITY_X = []
+CITY_Y = []
+NUMBER_OF_CITIES = 16 # N
+CITY_NAMES = ["Wrocław", "Bydgoszcz", "Lublin", "Gorzów Wielkopolski",
+              "Łódź", "Kraków", "Warszawa", "Opole",
+              "Rzeszów", "Białystok", "Gdańsk", "Katowice",
+              "Kielce", "Olsztyn", "Poznań", "Szczecin"]
 
 NUMBER_OF_ANTS = NUMBER_OF_CITIES # m
 ALPHA = 1
@@ -22,16 +27,18 @@ inv_distance_matrix = np.zeros(shape=(NUMBER_OF_CITIES, NUMBER_OF_CITIES), dtype
 quasi_decision_matrix = np.zeros(shape=(NUMBER_OF_CITIES, NUMBER_OF_CITIES), dtype=float)
 pheromone_matrix = np.zeros(shape=(NUMBER_OF_CITIES, NUMBER_OF_CITIES), dtype=float)
 
-def precompute_inv_distance_matrix() -> None:
-    global inv_distance_matrix
+# Used for voivodeship cities
+def load_cities_data_from_file():
+    global inv_distance_matrix, CITY_X, CITY_Y
+    data = pd.read_csv("../../resources/voivodeship_cities.csv")
+    CITY_X = data["X"].to_list()
+    CITY_Y = data["Y"].to_list()
+    data = data.drop(columns=data.columns[0:5])
 
-    inv_distance_matrix = np.zeros((NUMBER_OF_CITIES, NUMBER_OF_CITIES))
-    for i in range(NUMBER_OF_CITIES):
-        for j in range(i + 1):
-            distance = np.sqrt((CITY_X[i] - CITY_X[j]) ** 2 + (CITY_Y[i] - CITY_Y[j]) ** 2)
-            inv_distance = 1 / distance if distance != 0 else 0
-            inv_distance_matrix[i][j] = inv_distance
-            inv_distance_matrix[j][i] = inv_distance
+    inv_distance_matrix = data.to_numpy()
+    diagonal_mask = np.eye(NUMBER_OF_CITIES, dtype=bool)
+    inv_distance_matrix[~diagonal_mask] = inv_distance_matrix[~diagonal_mask] ** -1
+    inv_distance_matrix[diagonal_mask] = 0
 
 def compute_quasi_decision_matrix() -> None:
     global quasi_decision_matrix, pheromone_matrix
@@ -101,11 +108,11 @@ def plot_solution(solution):
     # City points with names
     plt.scatter(CITY_X, CITY_Y, c='red')
     for i in range(len(solution)):
-        plt.text(CITY_X[i] + TEXT_OFFSET, CITY_Y[i] + TEXT_OFFSET, str(i), color="black", fontsize=12)
+        plt.text(CITY_X[i] + TEXT_OFFSET, CITY_Y[i] + TEXT_OFFSET, CITY_NAMES[i], color="black", fontsize=12)
 
-    plt.title("Shortest route found for visiting all given cities")
-    plt.xlabel("X")
-    plt.ylabel("Y")
+    plt.title("Shortest found route for visiting all voivodeship cities")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
     plt.show()
 
 def main():
@@ -121,8 +128,8 @@ def main():
     start_city_indices = np.random.permutation(NUMBER_OF_CITIES).tolist()
     ants = [Ant(start_city_indices[i]) for i in range(NUMBER_OF_ANTS)]
 
-    # Precompute a distance matrix
-    precompute_inv_distance_matrix()
+    # Load in the distance matrix for voivodeship cities
+    load_cities_data_from_file()
     # Deposit a small amount of pheromone on all arcs
     pheromone_matrix = np.full(shape=(NUMBER_OF_CITIES, NUMBER_OF_CITIES),
                                fill_value=np.min(inv_distance_matrix[inv_distance_matrix > 0]))
@@ -156,7 +163,7 @@ def main():
     end = time.time()
 
     print(f"Optimal tour found: {best_tour}")
-    print(f"Length of the optimal tour found: {best_tour_length:.4f}")
+    print(f"Length of the optimal tour found: {best_tour_length:.2f} km")
     print(f"Time taken: {end - start:.3f} s")
 
     plot_solution(best_tour)
