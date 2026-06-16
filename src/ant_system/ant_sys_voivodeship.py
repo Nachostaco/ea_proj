@@ -111,8 +111,8 @@ def plot_solution(solution):
         plt.text(CITY_X[i] + TEXT_OFFSET, CITY_Y[i] + TEXT_OFFSET, CITY_NAMES[i], color="black", fontsize=12)
 
     plt.title("Shortest found route for visiting all voivodeship cities")
-    plt.xlabel("Longitude")
-    plt.ylabel("Latitude")
+    plt.xlabel("Longitude, °")
+    plt.ylabel("Latitude, °")
     plt.show()
 
 def main():
